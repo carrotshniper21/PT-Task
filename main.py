@@ -1,30 +1,19 @@
-import requests
+from consumet.flixhq.flixhq import FlixHQ
 import PySimpleGUI as sg
+import asyncio
 
-# Function to fetch movie data from OMDB API
-def search_movies(search_term):
-    url = "http://www.omdbapi.com/"
-    params = {
-        "apikey": "YOUR_OMDB_API_KEY",  # Replace 'YOUR_OMDB_API_KEY' with your actual OMDB API key
-        "s": search_term,
-        "type": "movie"
-    }
-
-    response = requests.get(url, params=params)
-    data = response.json()
-
-    if 'Search' in data:
-        return data['Search']
-    else:
-        return None
+# Function to fetch movie data via FlixHQ
+async def search_movies(search_term):
+    flixhq = FlixHQ()
+    response = await flixhq.search(search_term, None)
+    return response['Results']
 
 # Function to display search results
-def display_results(results):
+async def display_results(results):
     layout = [
         [sg.Text("Search Results", font=("Helvetica", 16), text_color="white")],
         [sg.HorizontalSeparator(color="white")],
-        [sg.Column([[sg.Image(data=result['Poster'], key=f"poster_{i}", size=(200, 300))],
-                    [sg.Text(result['Title'], size=(20, 1), text_color="white", font=("Helvetica", 12), justification="center")]],
+        [sg.Column([[sg.Text(result['Title'], size=(20, 1), text_color="white", font=("Helvetica", 12), justification="center")]],
                    element_justification='center', pad=(10, 10))
          for i, result in enumerate(results)]
     ]
@@ -39,9 +28,8 @@ def display_results(results):
 
     window.close()
 
-# Main function
-def main():
-    sg.theme('DarkBlack')  # Set the theme to black
+async def main():
+    sg.theme('DarkBlack')
 
     layout = [
         [sg.Text("Movie Search", font=("Helvetica", 16), text_color="white")],
@@ -57,15 +45,14 @@ def main():
             break
         elif event == "Search":
             search_term = values['search_term']
-            results = search_movies(search_term)
+            results = await search_movies(search_term)
 
             if results:
-                display_results(results)
+                await display_results(results)
             else:
                 sg.popup("No results found!")
 
     window.close()
 
 if __name__ == "__main__":
-    main()
-
+    asyncio.run(main())
