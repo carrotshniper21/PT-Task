@@ -27,6 +27,12 @@ class SearchParser:
         element = self.elements.select_one("div.pre-pagination:nth-child(3) > nav:nth-child(1) > ul:nth-child(1) > li:nth-child(1)")
         return 'active' in element.get('class', [])
 
+    def trending_movies(self):
+        return [a.get("href", "").lstrip('/').strip() for a in self.elements.select("div#trending-movies div.film_list-wrap div.flw-item div.film-poster a")]
+
+    def trending_shows(self):
+        return [a.get("href", "").lstrip('/').strip() for a in self.elements.select("div#trending-tv div.film_list-wrap div.flw-item div.film-poster a")]
+
 class PageParser:
     def __init__(self, elements):
         self.elements = elements
@@ -66,13 +72,10 @@ class PageParser:
         else:
             raise ValueError("Invalid media type")
 
-
-
     def label(self, index, label):
         elements = self.elements.select(f'div.m_i-d-content > div.elements > div:nth-child({index})')
 
         if elements:
-            # Extract text from selected elements, remove label, split by comma, trim whitespace, and collect into a list
             return [s.strip() for s in elements[0].get_text().replace(label, '').split(',')]
 
         return []

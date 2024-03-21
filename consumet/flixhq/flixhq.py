@@ -64,6 +64,18 @@ class FlixHQHTML:
         )
 
         return result
+
+    def parse_trending_movies(self, page_html: str) -> List[str]:
+        soup = BeautifulSoup(page_html, "html.parser")
+        page_parser = SearchParser(soup)
+
+        return page_parser.trending_movies()
+
+    def parse_trending_shows(self, page_html: str) -> List[str]:
+        soup = BeautifulSoup(page_html, "html.parser")
+        page_parser = SearchParser(soup)
+
+        return page_parser.trending_shows()
                 
 class FlixHQ:
     """
@@ -73,33 +85,67 @@ class FlixHQ:
     def __init__(self):
         self.base_url = "https://flixhq.to"
 
-    async def processResults(self, searchResults: str, url: str, page: int) -> FlixHQSearchResults:
+    async def search(self, query: str, page: Optional[int]) -> FlixHQSearchResults:
         async with httpx.AsyncClient() as client:
+            page = int(page) if page else 1
+
+            searchHtml = await client.get(
+                f"{self.base_url}/search/{query.replace(' ', '-')}?page={page}", timeout=10
+            ).text
+
             flixhq_parser = FlixHQHTML()
-            search_info = flixhq_parser.parse_search(searchResults)
+            (ids, has_next_page, total_pages) = flixhq_parser.parse_search(searchHtml)
 
             results = []
 
-            for id in search_info[0]:
+            for id in ids:
                 media_html = await client.get(f"{self.base_url}/{id}", timeout=10)
                 result = flixhq_parser.single_page(media_html, id, str(media_html.url))
-                results.append(result.dict())
+                results.append(result)
 
             filmResponse = FlixHQSearchResults(
                 CurrentPage=page,
-                HasNextPage=search_info[1],
-                TotalPages=search_info[2],
-                TotalResults=len(search_info[0]),
+                HasNextPage=has_next_page,
+                TotalPages=total_pages,
+                TotalResults=len(ids),
                 Results=results
             )
 
             return filmResponse.dict()
 
-    async def search(self, query: str, page: Optional[int]) -> FlixHQSearchResults:
-        async with httpx.AsyncClient() as client:
-            page = int(page) if page else 1
+    async def trending_movies(self) -> List[FlixHQResult]:
+        async with httpx.AsyncClient as client:
+            trendingHtml = await client.get(
+                f"{self.base_url}/home"
+            ).text
 
-            searchResults = await client.get(
-                f"{self.base_url}/search/{query.replace(' ', '-')}?page={page}", timeout=10
-            )
-            return await self.processResults(searchResults.text, str(searchResults.url), page)
+            flixhq_parser = FlixHQHTML()
+            ids = flixhq_parser.parse_trending_movies(trendingHtml)
+
+            results = []
+
+            for id in ids:
+                media_html = await client.get(f"{self.base_url}/{id}", timeout=19)
+                result = flixhq_parser.single_page(media_html, id, str(media_html.url))
+                results.append(result)
+
+            return results
+
+    async def trending_shows(self) -> List[FlixHQResult]:
+        async with httpx.AsyncClient as client:
+            trendingHtml = await client.get(
+                f"{self.base_url}/home"
+            ).text
+
+            flixhq_parser = FlixHQHTML()
+            ids = flixhq_parser.parse_trending_shows(trendingHtml)
+
+            results = []
+
+            for id in ids:
+                media_html = await client.get(f"{self.base_url}/{id}", timeout=19)
+                result = flixhq_parser.single_page(media_html, id, str(media_html.url))
+                results.append(result)
+
+            return results
+    
