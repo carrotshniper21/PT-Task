@@ -1,8 +1,4 @@
 beautifulsoup4==4.12.3
-fastapi==0.110.0
 httpx==0.27.0
-movies==1.0.0
-pycryptodomex==3.20.0
 pydantic==2.6.4
 PySimpleGUI==5.0.3
-Requests==2.31.0
