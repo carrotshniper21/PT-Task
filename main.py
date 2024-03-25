@@ -137,7 +137,7 @@ def display_movie_details(movie):
         layout,
         size=(950, 520),
         finalize=True,
-        background_color="#2a2a2a"
+        background_color="#2a2a2a",
     )
 
     window.TKroot.iconbitmap("./logo.ico")
