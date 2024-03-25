@@ -584,7 +584,7 @@ async def main():
         window.TKroot, padx=0, pady=0, bd=0, bg=sg.theme_background_color()
     )
     frame.place(x=700, y=0)
-    window["query"].Widget.master.place(in_=frame, x=10, y=30)
+    window["query"].Widget.master.place(in_=frame, x=10, y=25)
 
     while True:
         event, values = window.read()
