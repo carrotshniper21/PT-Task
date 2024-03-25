@@ -173,7 +173,7 @@ async def display_results(results, query):
         [
             sg.Text(
                 f'Search Results for "{query}"',
-                font=("Jetbrains Mono", 20),
+                font=("Jetbrains Mono", 20, "bold"),
                 text_color="white",
                 background_color="#2a2a2a",
             )
