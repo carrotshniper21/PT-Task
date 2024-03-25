@@ -6,9 +6,11 @@ from typing import List, Optional, Tuple
 from consumet.html.flixhq_html import SearchParser, PageParser
 import concurrent.futures
 
+
 class MediaType(Enum):
     TV = "tv"
     MOVIE = "movie"
+
 
 class FlixHQResult(BaseModel):
     Id: str
@@ -28,6 +30,7 @@ class FlixHQResult(BaseModel):
     Cast: List[str]
     Tags: List[str]
 
+
 class FlixHQSearchResults(BaseModel):
     CurrentPage: int
     HasNextPage: bool
@@ -35,13 +38,18 @@ class FlixHQSearchResults(BaseModel):
     TotalResults: int
     Results: List[FlixHQResult]
 
+
 class FlixHQHTML:
     def parse_search(self, page_html: str) -> Tuple[List[str], bool, int]:
         soup = BeautifulSoup(page_html, "html.parser")
         search_parser = SearchParser(soup)
-        return ( search_parser.page_ids(), search_parser.has_next_page(), search_parser.total_pages()) 
+        return (
+            search_parser.page_ids(),
+            search_parser.has_next_page(),
+            search_parser.total_pages(),
+        )
 
-    def parse_page(self, media_html: str, id: str, url: str) -> FlixHQResult: 
+    def parse_page(self, media_html: str, id: str, url: str) -> FlixHQResult:
         soup = BeautifulSoup(media_html, "html.parser")
         page_parser = PageParser(soup)
 
@@ -61,7 +69,7 @@ class FlixHQHTML:
             Country=page_parser.label(1, "Country:"),
             Production=page_parser.label(4, "Production:"),
             Cast=page_parser.label(5, "Casts:"),
-            Tags=page_parser.label(6, "Tags:")
+            Tags=page_parser.label(6, "Tags:"),
         )
 
         return result
@@ -77,7 +85,8 @@ class FlixHQHTML:
         page_parser = SearchParser(soup)
 
         return page_parser.trending_shows()
-                
+
+
 class FlixHQ:
     """
     Finds film details, parses data and returns film info
@@ -108,7 +117,7 @@ class FlixHQ:
         urls = []
 
         for id in ids:
-            url = f'{self.base_url}/{id}'
+            url = f"{self.base_url}/{id}"
             urls.append(url)
 
         html = []
@@ -134,22 +143,20 @@ class FlixHQ:
             HasNextPage=has_next_page,
             TotalPages=total_pages,
             TotalResults=len(ids),
-            Results=results
+            Results=results,
         )
 
         return filmResponse.dict()
 
     async def trending_movies(self) -> List[FlixHQResult]:
-        trendingHtml = requests.get(
-            f"{self.base_url}/home"
-        )
+        trendingHtml = requests.get(f"{self.base_url}/home")
         flixhq_parser = FlixHQHTML()
         ids = flixhq_parser.parse_trending_movies(trendingHtml.text)
 
         urls = []
 
         for id in ids:
-            url = f'{self.base_url}/{id}'
+            url = f"{self.base_url}/{id}"
             urls.append(url)
 
         html = []
@@ -172,18 +179,15 @@ class FlixHQ:
 
         return results
 
-
     async def trending_shows(self) -> List[FlixHQResult]:
-        trendingHtml = requests.get(
-            f"{self.base_url}/home"
-        )
+        trendingHtml = requests.get(f"{self.base_url}/home")
         flixhq_parser = FlixHQHTML()
         ids = flixhq_parser.parse_trending_shows(trendingHtml.text)
 
         urls = []
 
         for id in ids:
-            url = f'{self.base_url}/{id}'
+            url = f"{self.base_url}/{id}"
             urls.append(url)
 
         html = []
