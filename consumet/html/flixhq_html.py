@@ -1,5 +1,6 @@
 import re
 from enum import Enum
+from typing import List
 
 
 class MediaType(Enum):
@@ -8,16 +9,38 @@ class MediaType(Enum):
 
 
 class SearchParser:
+    """
+    Parses the search page HTML content from FlixHQ.
+    """
+
     def __init__(self, elements):
+        """
+        Initialize the SearchParser with the given elements.
+
+        Args:
+            elements: BeautifulSoup elements from the search page.
+        """
         self.elements = elements
 
-    def page_ids(self):
+    def page_ids(self) -> List[str]:
+        """
+        Extract movie/TV show IDs from the search page.
+
+        Returns:
+            List[str]: A list of movie/TV show IDs.
+        """
         return [
             a.get("href", "").lstrip("/").strip()
             for a in self.elements.select("div.film-poster > a")
         ]
 
-    def total_pages(self):
+    def total_pages(self) -> int:
+        """
+        Extract the total number of pages from the search page.
+
+        Returns:
+            int: Total number of pages.
+        """
         total_pages_attr = self.elements.select_one(
             "div.pre-pagination:nth-child(3) > nav:nth-child(1) > ul:nth-child(1) > li.page-item:last-child a"
         )["href"]
@@ -30,13 +53,25 @@ class SearchParser:
 
         return 1
 
-    def has_next_page(self):
+    def has_next_page(self) -> bool:
+        """
+        Check if there is a next page available.
+
+        Returns:
+            bool: True if there is a next page, otherwise False.
+        """
         element = self.elements.select_one(
             "div.pre-pagination:nth-child(3) > nav:nth-child(1) > ul:nth-child(1) > li:nth-child(1)"
         )
         return "active" in element.get("class", [])
 
-    def trending_movies(self):
+    def trending_movies(self) -> List[str]:
+        """
+        Extract trending movie IDs.
+
+        Returns:
+            List[str]: A list of trending movie IDs.
+        """
         return [
             a.get("href", "").lstrip("/").strip()
             for a in self.elements.select(
@@ -44,7 +79,13 @@ class SearchParser:
             )
         ]
 
-    def trending_shows(self):
+    def trending_shows(self) -> List[str]:
+        """
+        Extract trending TV show IDs.
+
+        Returns:
+            List[str]: A list of trending TV show IDs.
+        """
         return [
             a.get("href", "").lstrip("/").strip()
             for a in self.elements.select(
@@ -53,11 +94,28 @@ class SearchParser:
         ]
 
 
+# Class to parse movie/TV show page HTML content from FlixHQ
 class PageParser:
+    """
+    A class to parse the movie/TV show page HTML content from FlixHQ.
+    """
+
     def __init__(self, elements):
+        """
+        Initialize the PageParser with the given elements.
+
+        Args:
+            elements: BeautifulSoup elements from the movie/TV show page.
+        """
         self.elements = elements
 
-    def image(self):
+    def image(self) -> str:
+        """
+        Extract the image URL of the movie/TV show.
+
+        Returns:
+            str: The image URL.
+        """
         image_element = self.elements.select_one("div.m_i-d-poster > div > img")
 
         if image_element:
@@ -66,7 +124,13 @@ class PageParser:
 
         return ""
 
-    def title(self):
+    def title(self) -> str:
+        """
+        Extract the title of the movie/TV show.
+
+        Returns:
+            str: The title.
+        """
         title_element = self.elements.select_one(
             "#main-wrapper > div.movie_information > div > div.m_i-detail > div.m_i-d-content > h2"
         )
@@ -76,7 +140,13 @@ class PageParser:
 
         return ""
 
-    def cover(self):
+    def cover(self) -> str:
+        """
+        Extract the cover URL of the movie/TV show.
+
+        Returns:
+            str: The cover URL.
+        """
         cover_attr = self.elements.select_one("div.w_b-cover")["style"]
 
         if cover_attr:
@@ -87,7 +157,19 @@ class PageParser:
 
         return ""
 
-    def media_type(self, id):
+    def media_type(self, id) -> str:
+        """
+        Determine the media type (TV or Movie) based on the ID.
+
+        Args:
+            id (str): The movie/TV show ID.
+
+        Returns:
+            str: The media type ("tv" or "movie").
+
+        Raises:
+            ValueError: If the media type is invalid.
+        """
         id_parts = id.split("/")
         if id_parts[0] == MediaType.TV.value:
             return MediaType.TV.value
@@ -96,7 +178,17 @@ class PageParser:
         else:
             raise ValueError("Invalid media type")
 
-    def label(self, index, label):
+    def label(self, index, label) -> List[str]:
+        """
+        Extract a specific label's content from the movie/TV show page.
+
+        Args:
+            index (int): The index of the label.
+            label (str): The label to extract.
+
+        Returns:
+            List[str]: A list of label content.
+        """
         elements = self.elements.select(
             f"div.m_i-d-content > div.elements > div:nth-child({index})"
         )
@@ -106,9 +198,15 @@ class PageParser:
                 s.strip() for s in elements[0].get_text().replace(label, "").split(",")
             ]
 
-        return []
+        return [""]
 
-    def description(self):
+    def description(self) -> str:
+        """
+        Extract the description of the movie/TV show.
+
+        Returns:
+            str: The description.
+        """
         description_element = self.elements.select_one(
             "#main-wrapper > div.movie_information > div > div.m_i-detail > div.m_i-d-content > div.description"
         )
@@ -118,7 +216,13 @@ class PageParser:
 
         return ""
 
-    def quality(self):
+    def quality(self) -> str:
+        """
+        Extract the quality of the movie/TV show.
+
+        Returns:
+            str: The quality.
+        """
         quality_element = self.elements.select_one("span.item:nth-child(1)")
 
         if quality_element:
@@ -126,7 +230,13 @@ class PageParser:
 
         return ""
 
-    def rating(self):
+    def rating(self) -> str:
+        """
+        Extract the rating of the movie/TV show.
+
+        Returns:
+            str: The rating.
+        """
         rating_element = self.elements.select_one("span.item:nth-child(2)")
 
         if rating_element:
@@ -134,7 +244,13 @@ class PageParser:
 
         return ""
 
-    def duration(self):
+    def duration(self) -> str:
+        """
+        Extract the duration of the movie/TV show.
+
+        Returns:
+            str: The duration.
+        """
         duration_element = self.elements.select_one("span.item:nth-child(3)")
 
         if duration_element:

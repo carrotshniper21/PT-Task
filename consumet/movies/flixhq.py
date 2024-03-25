@@ -7,11 +7,13 @@ from consumet.html.flixhq_html import SearchParser, PageParser
 import concurrent.futures
 
 
+# Enum to represent media types
 class MediaType(Enum):
     TV = "tv"
     MOVIE = "movie"
 
 
+# Defines the structure of a single FlixHQ result
 class FlixHQResult(BaseModel):
     Id: str
     Cover: str
@@ -27,10 +29,11 @@ class FlixHQResult(BaseModel):
     Duration: str
     Country: List[str]
     Production: List[str]
-    Cast: List[str]
+    Casts: List[str]
     Tags: List[str]
 
 
+# Defines the structure of a entire FlixHQ page
 class FlixHQSearchResults(BaseModel):
     CurrentPage: int
     HasNextPage: bool
@@ -39,8 +42,24 @@ class FlixHQSearchResults(BaseModel):
     Results: List[FlixHQResult]
 
 
+# Parses the HTML content from FlixHQ
 class FlixHQHTML:
+    """
+    A class to parse HTML content from FlixHQ website.
+    """
+
     def parse_search(self, page_html: str) -> Tuple[List[str], bool, int]:
+        """
+        Parse search page HTML to extract movie/TV show IDs, pagination info.
+
+        Args:
+            page_html (str): The HTML content of the search page.
+
+        Returns:
+            Tuple[List[str], bool, int]: A tuple containing the list of IDs,
+                                          a boolean indicating if there's a next page,
+                                          and the total number of pages.
+        """
         soup = BeautifulSoup(page_html, "html.parser")
         search_parser = SearchParser(soup)
         return (
@@ -50,6 +69,17 @@ class FlixHQHTML:
         )
 
     def parse_page(self, media_html: str, id: str, url: str) -> FlixHQResult:
+        """
+        Parse media page HTML to extract movie/TV show details.
+
+        Args:
+            media_html (str): The HTML content of the media page.
+            id (str): The ID of the media.
+            url (str): The URL of the media.
+
+        Returns:
+            FlixHQResult: An instance of FlixHQResult containing the parsed details.
+        """
         soup = BeautifulSoup(media_html, "html.parser")
         page_parser = PageParser(soup)
 
@@ -68,34 +98,61 @@ class FlixHQHTML:
             Duration=page_parser.duration(),
             Country=page_parser.label(1, "Country:"),
             Production=page_parser.label(4, "Production:"),
-            Cast=page_parser.label(5, "Casts:"),
+            Casts=page_parser.label(5, "Casts:"),
             Tags=page_parser.label(6, "Tags:"),
         )
 
         return result
 
     def parse_trending_movies(self, page_html: str) -> List[str]:
+        """
+        Parse trending movies page HTML to extract movie IDs.
+
+        Args:
+            page_html (str): The HTML content of the trending movies page.
+
+        Returns:
+            List[str]: A list of trending movie IDs.
+        """
         soup = BeautifulSoup(page_html, "html.parser")
         page_parser = SearchParser(soup)
-
         return page_parser.trending_movies()
 
     def parse_trending_shows(self, page_html: str) -> List[str]:
+        """
+        Parse trending shows page HTML to extract TV show IDs.
+
+        Args:
+            page_html (str): The HTML content of the trending shows page.
+
+        Returns:
+            List[str]: A list of trending TV show IDs.
+        """
         soup = BeautifulSoup(page_html, "html.parser")
         page_parser = SearchParser(soup)
-
         return page_parser.trending_shows()
 
 
+# Class to interact with FlixHQ API
 class FlixHQ:
     """
-    Finds film details, parses data and returns film info
+    Main code to scrape from FlixHQ
     """
 
     def __init__(self):
         self.base_url = "https://flixhq.to"
 
-    def load_url(self, url, timeout=5):
+    def load_url(self, url, timeout=5) -> str:
+        """
+        Load a URL and return its content.
+
+        Args:
+            url (str): The URL to fetch.
+            timeout (int, optional): The timeout for the request. Defaults to 5.
+
+        Returns:
+            str: The content of the URL.
+        """
         try:
             response = requests.get(url, timeout=timeout).text
             return response
@@ -104,6 +161,16 @@ class FlixHQ:
             return None
 
     async def search(self, query: str, page: Optional[int]) -> FlixHQSearchResults:
+        """
+        Search for movies/TV shows on FlixHQ.
+
+        Args:
+            query (str): The search query.
+            page (Optional[int]): The page number for pagination.
+
+        Returns:
+            FlixHQSearchResults: A list of search results.
+        """
         page = int(page) if page else 1
 
         searchHtml = requests.get(
@@ -114,11 +181,7 @@ class FlixHQ:
 
         (ids, has_next_page, total_pages) = flixhq_parser.parse_search(searchHtml)
 
-        urls = []
-
-        for id in ids:
-            url = f"{self.base_url}/{id}"
-            urls.append(url)
+        urls = [f"{self.base_url}/{id}" for id in ids]
 
         html = []
 
@@ -132,11 +195,10 @@ class FlixHQ:
                 finally:
                     html.append(data)
 
-        results = []
-
-        for i, media_html in enumerate(html):
-            result = flixhq_parser.parse_page(media_html, ids[i], str(urls[i]))
-            results.append(result)
+        results = [
+            flixhq_parser.parse_page(media_html, ids[i], str(urls[i])).dict()
+            for i, media_html in enumerate(html)
+        ]
 
         filmResponse = FlixHQSearchResults(
             CurrentPage=page,
@@ -149,15 +211,17 @@ class FlixHQ:
         return filmResponse.dict()
 
     async def trending_movies(self) -> List[FlixHQResult]:
-        trendingHtml = requests.get(f"{self.base_url}/home")
+        """
+        Fetch trending movies from FlixHQ.
+
+        Returns:
+            List[FlixHQResult]: A list of trending movie details.
+        """
+        trendingHtml = requests.get(f"{self.base_url}/home").text
         flixhq_parser = FlixHQHTML()
-        ids = flixhq_parser.parse_trending_movies(trendingHtml.text)
+        ids = flixhq_parser.parse_trending_movies(trendingHtml)
 
-        urls = []
-
-        for id in ids:
-            url = f"{self.base_url}/{id}"
-            urls.append(url)
+        urls = [f"{self.base_url}/{id}" for id in ids]
 
         html = []
 
@@ -171,24 +235,25 @@ class FlixHQ:
                 finally:
                     html.append(data)
 
-        results = []
-
-        for i, media_html in enumerate(html):
-            result = flixhq_parser.parse_page(media_html, ids[i], str(urls[i]))
-            results.append(result.dict())
+        results = [
+            flixhq_parser.parse_page(media_html, ids[i], str(urls[i])).dict()
+            for i, media_html in enumerate(html)
+        ]
 
         return results
 
     async def trending_shows(self) -> List[FlixHQResult]:
-        trendingHtml = requests.get(f"{self.base_url}/home")
+        """
+        Fetch trending TV shows from FlixHQ.
+
+        Returns:
+            List[FlixHQResult]: A list of trending TV show details.
+        """
+        trendingHtml = requests.get(f"{self.base_url}/home").text
         flixhq_parser = FlixHQHTML()
-        ids = flixhq_parser.parse_trending_shows(trendingHtml.text)
+        ids = flixhq_parser.parse_trending_shows(trendingHtml)
 
-        urls = []
-
-        for id in ids:
-            url = f"{self.base_url}/{id}"
-            urls.append(url)
+        urls = [f"{self.base_url}/{id}" for id in ids]
 
         html = []
 
@@ -202,10 +267,9 @@ class FlixHQ:
                 finally:
                     html.append(data)
 
-        results = []
-
-        for i, media_html in enumerate(html):
-            result = flixhq_parser.parse_page(media_html, ids[i], str(urls[i]))
-            results.append(result.dict())
+        results = [
+            flixhq_parser.parse_page(media_html, ids[i], str(urls[i])).dict()
+            for i, media_html in enumerate(html)
+        ]
 
         return results
