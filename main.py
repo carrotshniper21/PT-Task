@@ -56,7 +56,7 @@ def display_movie_details(movie):
         [
             sg.Text(
                 f"{movie['Title']} ({movie['ReleaseDate'].split('-')[0]})",
-                font=("Jetbrains Mono", 20),
+                font=("Jetbrains Mono", 20, "bold"),
                 text_color="white",
                 background_color="#2a2a2a",
             )
@@ -476,7 +476,7 @@ async def main():
             roundImage("./logo.ico", "#2a2a2a"),
             sg.Text(
                 "Consumet Movies",
-                font=("Jetbrains Mono", 24),
+                font=("Jetbrains Mono", 24, "bold"),
                 text_color="white",
                 background_color="#2a2a2a",
                 pad=((0, 0), 20),
@@ -487,7 +487,7 @@ async def main():
                 "Search Here",
                 key="query",
                 size=(30, 1),
-                font=("Jetbrains Mono", 14),
+                font=("Jetbrains Mono", 14, "italic"),
                 background_color="#3a3a3a",
                 text_color="white",
                 border_width=0,
