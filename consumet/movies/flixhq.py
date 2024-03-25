@@ -41,7 +41,7 @@ class FlixHQHTML:
         search_parser = SearchParser(soup)
         return ( search_parser.page_ids(), search_parser.has_next_page(), search_parser.total_pages()) 
 
-    def single_page(self, media_html: str, id: str, url: str) -> FlixHQResult: 
+    def parse_page(self, media_html: str, id: str, url: str) -> FlixHQResult: 
         soup = BeautifulSoup(media_html, "html.parser")
         page_parser = PageParser(soup)
 
@@ -126,7 +126,7 @@ class FlixHQ:
         results = []
 
         for i, media_html in enumerate(html):
-            result = flixhq_parser.single_page(media_html, id, str(urls[i]))
+            result = flixhq_parser.parse_page(media_html, ids[i], str(urls[i]))
             results.append(result)
 
         filmResponse = FlixHQSearchResults(
@@ -167,7 +167,7 @@ class FlixHQ:
         results = []
 
         for i, media_html in enumerate(html):
-            result = flixhq_parser.single_page(media_html, id, str(urls[i]))
+            result = flixhq_parser.parse_page(media_html, ids[i], str(urls[i]))
             results.append(result.dict())
 
         return results
@@ -201,7 +201,7 @@ class FlixHQ:
         results = []
 
         for i, media_html in enumerate(html):
-            result = flixhq_parser.single_page(media_html, id, str(urls[i]))
+            result = flixhq_parser.parse_page(media_html, ids[i], str(urls[i]))
             results.append(result.dict())
 
         return results
