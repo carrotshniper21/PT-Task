@@ -1,10 +1,10 @@
 from consumet.movies.flixhq import FlixHQ
 import PySimpleGUI as sg
+import tkinter as tk
 from PIL import Image
 import asyncio
 import requests
 from io import BytesIO
-import os
 
 
 # Function to fetch movie data via FlixHQ
@@ -30,9 +30,7 @@ def display_movie_details(movie):
 
     response = requests.get(image_url, headers=headers)
 
-    image = Image.open(BytesIO(response.content)).resize(
-        (100, 150)
-    )  
+    image = Image.open(BytesIO(response.content)).resize((100, 150))
     bio = BytesIO()
     image.save(bio, format="PNG")
     image_data = bio.getvalue()
@@ -124,9 +122,7 @@ def display_results(results, query):
 
         response = requests.get(movie["Image"], headers=headers)
 
-        image = Image.open(BytesIO(response.content)).resize(
-            (100, 150)
-        )  
+        image = Image.open(BytesIO(response.content)).resize((100, 150))
         bio = BytesIO()
         image.save(bio, format="PNG")
         image_data = bio.getvalue()
@@ -211,8 +207,6 @@ async def main():
     sg.set_options(dpi_awareness=True)
     sg.theme("DarkGrey7")
 
-    icon_path = os.path.join(os.getcwd(), "icon.ico")  # Using relative path
-
     layout = [
         [
             sg.Text(
@@ -231,7 +225,6 @@ async def main():
                 background_color="#3a3a3a",
                 text_color="white",
                 border_width=0,
-                pad=((700, 0), 0),
                 enable_events=True,
             )
         ],
@@ -303,24 +296,27 @@ async def main():
                 scrollable=True,
                 background_color="#2a2a2a",
                 vertical_scroll_only=True,
-            )
+            ),
         ]
     )
 
     window = sg.Window(
         "Consumet Movies",
         layout,
-        icon=icon_path,
         size=(1080, 720),
         background_color="#2a2a2a",
         finalize=True,
     )
+
+    # Set the icon for the window
+    window.TKroot.iconbitmap("./logo.ico")
+
     window["query"].bind("<Return>", "_Enter")
     frame = sg.tk.Frame(
         window.TKroot, padx=0, pady=0, bd=0, bg=sg.theme_background_color()
     )
-    frame.place(x=0, y=0)
-    window["query"].Widget.master.place(in_=frame, x=10, y=55)
+    frame.place(x=700, y=0)
+    window["query"].Widget.master.place(in_=frame, x=10, y=30)
 
     while True:
         event, values = window.read()
